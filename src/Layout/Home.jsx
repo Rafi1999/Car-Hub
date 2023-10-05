@@ -1,10 +1,11 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Search from "./Search";
 import Navbar from "./Navbar";
 import CarCard from "./CarCard";
 
 const Home = () => {
   const [cars, setCars] = useState([]);
+  const [originalCars, setOriginalCars] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
   const carsPerPage = 6;
@@ -12,7 +13,10 @@ const Home = () => {
   useEffect(() => {
     fetch("../../cars.json")
       .then((response) => response.json())
-      .then((data) => setCars(data))
+      .then((data) => {
+        setCars(data);
+        setOriginalCars(data);
+      })
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
 
@@ -20,35 +24,40 @@ const Home = () => {
   const indexOfLastCar = currentPage * carsPerPage;
   const indexOfFirstCar = indexOfLastCar - carsPerPage;
 
-  // Filter cars based on the search query
-  const filteredCars = cars.filter((car) =>
-    car.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const currentCars = filteredCars.slice(indexOfFirstCar, indexOfLastCar);
-
   // Function to handle page change
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
 
-  // Function to handle search input change
-  const handleSearchInputChange = (event) => {
-    setSearchQuery(event.target.value);
-    setCurrentPage(1); // Reset to the first page when searching
+  // Function to handle search action
+  const handleSearchAction = () => {
+    // Filter cars based on the search query and reset to the first page
+    const filteredCars = originalCars.filter((car) =>
+      car.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Set the filtered cars as the new data to display
+    setCars(filteredCars);
+
+    // Reset to the first page
+    setCurrentPage(1);
   };
 
   return (
     <div>
       <Navbar />
-      <Search onChange={handleSearchInputChange} value={searchQuery} />
+      <Search
+        onSearch={handleSearchAction}
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+      />
       <div className="grid sm:grid-cols-1 md:grid-cols-3 justify-items-center gap-5 my-14">
-        {currentCars.map((each) => (
+        {cars.slice(indexOfFirstCar, indexOfLastCar).map((each) => (
           <CarCard key={each.id} car={each} />
         ))}
       </div>
       <div className="flex justify-center mt-4">
-        {Array.from({ length: Math.ceil(filteredCars.length / carsPerPage) }).map(
+        {Array.from({ length: Math.ceil(cars.length / carsPerPage) }).map(
           (page, index) => (
             <button
               key={index}
